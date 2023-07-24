@@ -52,9 +52,9 @@ cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -
 echo "CPU:ST		$cpu_st"
 cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:MT($cpu_c)	$cpu_mt"
-crypto_st=$(openssl speed -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4)
+crypto_st=$(openssl speed -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4 | sed "s/^/scale=3; /" | sed "s/\$/ \/ 1024 ^ 2/" | bc)
 echo "CRYPTO:ST	$crypto_st"
-crypto_mt=$(openssl speed -multi $cpu_c -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4)
+crypto_mt=$(openssl speed -multi $cpu_c -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4 | sed "s/^/scale=3; /" | sed "s/\$/ \/ 1024 ^ 2/" | bc)
 echo "CRYPTO:MT($cpu_c)	$crypto_mt"
 bw_st=$(stress-ng --memrate 1 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5)
 echo "MEM_BW:ST	$bw_st"
