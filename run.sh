@@ -58,6 +58,22 @@ LPT_mdd(){
 	rm $output
 }
 
+LPT_getMMCType(){
+	local width=$(od --endian=big -i -An /sys/class/mmc_host/$1/device/of_node/bus-width | xargs)
+	case "$width" in
+		4)
+			echo "SD"
+			;;
+		8)
+			echo "eMMC"
+			;;
+		*)
+			echo "$FUNC: unknown mmc type: $width" >&2
+			echo "MMC"
+			;;
+	esac
+}
+
 time=$LPT_DURATION
 ip=$LPT_IP
 cpu_c=$(nproc --all)
@@ -83,20 +99,17 @@ echo "MEM_BW:ST	$bw_st"
 bw_mt=$(stress-ng --memrate 0 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5 | sed "s/$/*$cpu_c/" | bc)
 echo "MEM_BW:MT($cpu_c)	$bw_mt"
 mmc0=$(LPT_dd mmcblk0)
+echo "$(LPT_getMMCType mmc0):		$mmc0"
 if [ -b "/dev/mmcblk1" ]; then
-	echo "EMMC:		$mmc0"
 	mmc1=$(LPT_dd mmcblk1)
-	echo "SD:		$mmc1"
-else
-	echo "SD:		$mmc0"
+	echo "$(LPT_getMMCType mmc1):		$mmc1"
 fi
-net_hd=$(iperf -c ${ip} -f M --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
-echo "NET:HD		$net_hd"
-net_fd=$(iperf -c ${ip} -f M --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
-echo "NET:FD		$net_fd"
 usb_st=$(LPT_dd $(lsblk -nld | grep ^sd | cut -d " " -f 1 | head -n 1))
 echo "USB:ST		$usb_st"
 usb_c=$(lsblk -nld | grep ^sd | cut -d " " -f 1 | wc -l)
 usb_mt=$(LPT_mdd $(lsblk -nld | grep ^sd | cut -d " " -f 1))
 echo "USB:MT($usb_c)	$usb_mt"
-
+net_hd=$(iperf -c ${ip} -f M --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
+echo "NET:HD		$net_hd"
+net_fd=$(iperf -c ${ip} -f M --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
+echo "NET:FD		$net_fd"
