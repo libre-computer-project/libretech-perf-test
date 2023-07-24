@@ -5,10 +5,10 @@ quickly test performance of a libre computer board
 
 ## instructions
 ```
-git clone https://github.com/libre-computer-project/libretech-perf-test.git
-cd libretech-perf-test
-./setup.sh
-sudo LPT_IP=192.168.0.1 ./run.sh
+$ git clone https://github.com/libre-computer-project/libretech-perf-test.git
+$ cd libretech-perf-test
+$ ./setup.sh
+$ sudo LPT_IP=192.168.0.1 ./run.sh
 BOARD VENDOR:	libre-computer
 BOARD NAME:  	all-h3-cc-h5
 TEST DURATION:	10
