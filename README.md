@@ -1,7 +1,7 @@
 # libretech-perf-test
 
 ## purpose
-quickly test performance of a libre computer board
+quickly test performance of a libre computer board, see [results](https://docs.google.com/spreadsheets/d/1dlUla9b1TVcf-fjBOEwe3ojz5zhT3l3TJv7XnAYsLz8/edit?usp=sharing).
 
 ## instructions
 ```
