@@ -40,6 +40,14 @@ time=$LPT_DURATION
 ip=$LPT_IP
 cpu_c=$(nproc --all)
 
+vendor_path=/sys/class/dmi/id/board_vendor
+if [ -e "$vendor_path" ]; then
+	echo "BOARD VENDOR:	$(cat $vendor_path)"
+fi
+board_path=/sys/class/dmi/id/board_name
+if [ -e "$board_path" ]; then
+	echo "BOARD NAME:	$(cat $board_path)"
+fi
 cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:ST		$cpu_st"
 cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -s " " | cut -d " " -f 9)
