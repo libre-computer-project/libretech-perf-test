@@ -10,9 +10,9 @@ cd libretech-perf-test
 ./setup.sh
 sudo LPT_IP=192.168.0.1 ./run.sh
 BOARD VENDOR:	libre-computer
-BOARD NAME:  all-h3-cc-h5
+BOARD NAME:  	all-h3-cc-h5
 TEST DURATION:	10
-NET TEST IP:	192.168.1.2
+NET TEST IP:	192.168.0.1
 CPU:ST		230.56
 CPU:MT(4)	638.07
 CRYPTO:ST	469201113.74
