@@ -86,9 +86,9 @@ board_path=/sys/class/dmi/id/board_name
 if [ -e "$board_path" ]; then
 	echo "BOARD NAME:	$(cat $board_path)"
 fi
-cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -s " " | cut -d " " -f 9)
+cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:ST		$cpu_st"
-cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | tail -n 1 | tr -s " " | cut -d " " -f 9)
+cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:MT($cpu_c)	$cpu_mt"
 crypto_st=$(openssl speed -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4 | sed "s/^/scale=3; /" | sed "s/\$/ \/ 1024 ^ 2/" | bc)
 echo "CRYPTO:ST	$crypto_st"
