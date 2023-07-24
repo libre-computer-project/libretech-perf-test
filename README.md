@@ -28,5 +28,5 @@ USB:MT(4)	94.7
 ```
 
 ## variables
-LPT_DURATION the first parameter of run.sh that sets the test duration which should not affect scores unless it is too short
-LPT_IP the IP running iperf for network test
+* LPT_DURATION the first parameter of run.sh that sets the test duration which should not affect scores unless it is too short
+* LPT_IP the IP running iperf for network test
