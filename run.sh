@@ -20,14 +20,36 @@ fi
 echo "NET TEST IP:	$LPT_IP"
 
 LPT_dd(){
-	timeout -s INT ${LPT_DURATION} dd if=/dev/$1 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10
+	local throughput=$(timeout -s INT ${LPT_DURATION} dd if=/dev/$1 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10,11)
+	if [ -z "$throughput" ]; then
+		local throughput=0
+	else
+		local number=${throughput%% *}
+		local suffix=${throughput##* }
+		case "$suffix" in
+			"GB/s")
+				local throughput=$(echo "$number * 1024" | bc)
+				;;
+			"MB/s")
+				local throughput=$number
+				;;
+			"KB/s")
+				local throughput=$(echo "scale=3; $number / 1024" | bc)
+				;;
+			*)
+				echo "$FUNC: unknown throughput from dd: $throughput" >&2
+				local throughput=0
+				;;
+		esac
+	fi
+	echo "$throughput"
 }
 
 LPT_mdd(){
 	pids=()
 	output=$(mktemp)
 	while [ ! -z "$1" ]; do
-		timeout -s INT ${LPT_DURATION} dd if=/dev/$1 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10 >> $output &
+		LPT_dd $1 >> $output &
 		pids+=($!)
 		shift
 	done
@@ -60,10 +82,10 @@ bw_st=$(stress-ng --memrate 1 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | 
 echo "MEM_BW:ST	$bw_st"
 bw_mt=$(stress-ng --memrate 0 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5 | sed "s/$/*$cpu_c/" | bc)
 echo "MEM_BW:MT($cpu_c)	$bw_mt"
-mmc0=$(timeout -s INT ${time} dd if=/dev/mmcblk0 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10)
+mmc0=$(LPT_dd mmcblk0)
 if [ -b "/dev/mmcblk1" ]; then
 	echo "EMMC:		$mmc0"
-	mmc1=$(timeout -s INT ${time} dd if=/dev/mmcblk1 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10)
+	mmc1=$(LPT_dd mmcblk1)
 	echo "SD:		$mmc1"
 else
 	echo "SD:		$mmc0"
