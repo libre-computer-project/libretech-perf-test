@@ -59,7 +59,12 @@ LPT_mdd(){
 }
 
 LPT_getMMCType(){
-	local width=$(od --endian=big -i -An /sys/class/mmc_host/$1/device/of_node/bus-width | xargs)
+	local width_path=/sys/class/mmc_host/$1/device/of_node/bus-width
+	if [ ! -e "$width_path" ]; then
+		echo "MMC"
+		return
+	fi
+	local width=$(od --endian=big -i -An "$width_path" | xargs)
 	case "$width" in
 		4)
 			echo "SD"
@@ -109,7 +114,7 @@ echo "USB:ST		$usb_st"
 usb_c=$(lsblk -nld | grep ^sd | cut -d " " -f 1 | wc -l)
 usb_mt=$(LPT_mdd $(lsblk -nld | grep ^sd | cut -d " " -f 1))
 echo "USB:MT($usb_c)	$usb_mt"
-net_hd=$(iperf -c ${ip} -f M --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
+net_hd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
 echo "NET:HD		$net_hd"
-net_fd=$(iperf -c ${ip} -f M --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
+net_fd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
 echo "NET:FD		$net_fd"
