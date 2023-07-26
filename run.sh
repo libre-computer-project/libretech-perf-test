@@ -103,8 +103,10 @@ bw_st=$(stress-ng --memrate 1 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | 
 echo "MEM_BW:ST	$bw_st"
 bw_mt=$(stress-ng --memrate 0 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5 | sed "s/$/*$cpu_c/" | bc)
 echo "MEM_BW:MT($cpu_c)	$bw_mt"
-mmc0=$(LPT_dd mmcblk0)
-echo "$(LPT_getMMCType mmc0):		$mmc0"
+if [ -b "/dev/mmcblk0" ]; then
+	mmc0=$(LPT_dd mmcblk0)
+	echo "$(LPT_getMMCType mmc0):		$mmc0"
+fi
 if [ -b "/dev/mmcblk1" ]; then
 	mmc1=$(LPT_dd mmcblk1)
 	echo "$(LPT_getMMCType mmc1):		$mmc1"
