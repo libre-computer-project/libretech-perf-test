@@ -111,11 +111,14 @@ if [ -b "/dev/mmcblk1" ]; then
 	mmc1=$(LPT_dd mmcblk1)
 	echo "$(LPT_getMMCType mmc1):		$mmc1"
 fi
-usb_st=$(LPT_dd $(lsblk -nld | grep ^sd | cut -d " " -f 1 | head -n 1))
-echo "USB:ST		$usb_st"
-usb_c=$(lsblk -nld | grep ^sd | cut -d " " -f 1 | wc -l)
-usb_mt=$(LPT_mdd $(lsblk -nld | grep ^sd | cut -d " " -f 1))
-echo "USB:MT($usb_c)	$usb_mt"
+sd_blks=$(lsblk -nld | grep ^sd | cut -d " " -f 1)
+sd_blks_count=$(echo -n "$sd_blks" | wc -l)
+if [ $sd_blks_count -gt 0 ]; then
+	usb_st=$(LPT_dd $(echo "$sd_blks" | head -n 1))
+	echo "USB:ST		$usb_st"
+	usb_mt=$(LPT_mdd $sd_blks)
+	echo "USB:MT($sd_blks_count)	$usb_mt"
+fi
 net_hd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
 echo "NET:HD		$net_hd"
 net_fd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
