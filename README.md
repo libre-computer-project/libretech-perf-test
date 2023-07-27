@@ -30,3 +30,6 @@ USB:MT(4)	95.1
 ## variables
 * LPT_DURATION the first parameter of run.sh that sets the test duration which should not affect scores unless it is too short
 * LPT_IP the IP running iperf for network test
+
+## Raspberry Pi 3 Model B+ vs Libre Computer AML-S905X-CC Le Potato
+![Raspberry Pi 3 B+ vs AML-S905X-CC](compare/pi-3-b-plus-vs-aml-s905x-cc.png)
