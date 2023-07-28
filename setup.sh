@@ -6,4 +6,4 @@ if [ "$USER" != "root" ]; then
 		SETUP_PREFIX=sudo
 	fi
 fi
-$SETUP_PREFIX apt -y install stress-ng bc iperf
+$SETUP_PREFIX apt -y install stress-ng bc iperf glmark2-es2-drm mesa-utils
