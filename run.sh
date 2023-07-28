@@ -13,7 +13,17 @@ EXIT_runSetup(){
 	exit 1
 }
 
-for prereq in bc stress-ng glmark2-es2-drm iperf; do
+GLMARK2=glmark2-es2-drm
+case "$(lsb_release -cs)" in
+	bullseye)
+		GLMARK2=
+		;;
+	buster)
+		GLMARK2=
+		;;
+esac
+
+for prereq in bc stress-ng iperf $GLMARK2; do
 	if ! which $prereq > /dev/null; then
 		EXIT_runSetup $prereq
 	fi
@@ -110,10 +120,12 @@ crypto_st=$(openssl speed -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2>
 echo "CRYPTO:ST	$crypto_st"
 crypto_mt=$(openssl speed -multi $cpu_c -mr -bytes +4096 -seconds +${time} -evp aes-128-gcm 2> /dev/null | grep "^+F" | cut -d ":" -f 4 | sed "s/^/scale=3; /" | sed "s/\$/ \/ 1024 ^ 2/" | bc)
 echo "CRYPTO:MT($cpu_c)	$crypto_mt"
-gpu_pixel=$(glmark2-es2-drm --benchmark refract:model=horse:duration=${time} --off-screen -s 1920x1920 | grep -o "Score: .*" | cut -d " " -f 2)
-echo "GPU:PIXEL	$gpu_pixel"
-gpu_vertex=$(glmark2-es2-drm --benchmark buffer:columns=1000:rows=30:duration=${time} --off-screen -s 1920x1920 | grep -o "Score: .*" | cut -d " " -f 2)
-echo "GPU:VERTEX	$gpu_vertex"
+if [ ! -z "$GLMARK2" ]; then
+	gpu_pixel=$(glmark2-es2-drm --benchmark refract:model=horse:duration=${time} --off-screen -s 1920x1920 | grep -o "Score: .*" | cut -d " " -f 2)
+	echo "GPU:PIXEL	$gpu_pixel"
+	gpu_vertex=$(glmark2-es2-drm --benchmark buffer:columns=1000:rows=30:duration=${time} --off-screen -s 1920x1920 | grep -o "Score: .*" | cut -d " " -f 2)
+	echo "GPU:VERTEX	$gpu_vertex"
+fi
 bw_st=$(stress-ng --memrate 1 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5)
 echo "MEM_BW:ST	$bw_st"
 bw_mt=$(stress-ng --memrate 0 -t ${time}s -M 2>&1 | grep -v stress-ng-memrate | grep write1024 | tr -s " " | cut -d " " -f 5 | sed "s/$/*$cpu_c/" | bc)
