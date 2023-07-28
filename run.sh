@@ -8,6 +8,17 @@ if [ "$USER" != "root" ]; then
 	exit 1
 fi
 
+EXIT_runSetup(){
+	echo "Please install $1 by running setup.sh." >&2
+	exit 1
+}
+
+for prereq in bc stress-ng glmark2-es2-drm iperf; do
+	if ! which $prereq > /dev/null; then
+		EXIT_runSetup $prereq
+	fi
+done
+
 LPT_DURATION=${1:-10}
 echo "TEST DURATION:	$LPT_DURATION"
 if [ -z "$LPT_IP" ]; then
