@@ -32,14 +32,21 @@ done
 
 LPT_DURATION=${1:-10}
 echo "TEST DURATION:	$LPT_DURATION"
-if [ -z "$LPT_IP" ]; then
-	echo "LPT_IP not set." >&2
-	LPT_IP=$(ip -4 route | grep default | head -n 1 | cut -d " " -f 3)
-	if [ -z "$LPT_IP" ]; then
-		exit 1
+
+if [ -z "$LPT_IP_ETH" ]; then
+	if [ ! -z "$LPT_IP" ]; then
+		LPT_IP_ETH=$LPT_IP
+	else
+		echo "LPT_IP_ETH not set." >&2
 	fi
 fi
-echo "NET TEST IP:	$LPT_IP"
+if [ -z "$LPT_IP_WIFI" ]; then
+	if [ ! -z "$LPT_IP" ]; then
+		LPT_IP_WIFI=$LPT_IP
+	else
+		echo "LPT_IP_WIFI not set." >&2
+	fi
+fi
 
 LPT_dd(){
 	local throughput=$(timeout -s INT ${LPT_DURATION} dd if=/dev/$1 of=/dev/null bs=1M iflag=nocache 2>&1 | tail -n 1 | cut -d " " -f 10,11)
@@ -80,6 +87,32 @@ LPT_mdd(){
 	rm $output
 }
 
+LPT_runIPerf(){
+	local duplex=""
+	if [ $2 -eq 1 ]; then
+		local duplex="-d"
+	fi
+	iperf -c "$1" -B "$3" -f M -P 2 --sum-only -t ${LPT_DURATION} $duplex | tail -n 1 | tr -s " " | cut -d " " -f 6
+}
+
+LPT_testIPerf(){
+	local if_alias=$1
+	shift
+	local ip_target=$1
+	shift
+	for if_name in "$@"; do
+		local if_ip=$(LPT_getIFIP $if_name)
+		if [ ! -z "$if_ip" ]; then
+			if [ "$if_alias" != "WIFI" ]; then
+				local if_hd=$(LPT_runIPerf $ip_target 0 $if_ip)
+				echo "$if_alias:HD		$if_hd"
+			fi
+			local if_fd=$(LPT_runIPerf $ip_target 1 $if_ip)
+			echo "$if_alias:FD		$if_fd"
+		fi
+	done
+}
+
 LPT_getMMCType(){
 	local width_path=/sys/class/mmc_host/$1/device/of_node/bus-width
 	if [ ! -e "$width_path" ]; then
@@ -101,8 +134,31 @@ LPT_getMMCType(){
 	esac
 }
 
+LPT_getIFEth(){
+	for interface in /sys/class/net/*; do
+		if [ $(cat $interface/type) -eq 1 ]; then
+			if [ ! -e $interface/wireless ]; then
+				echo ${interface##*/}
+			fi
+		fi
+	done
+}
+
+LPT_getIFWiFi(){
+	for interface in /sys/class/net/*; do
+		if [ $(cat $interface/type) -eq 1 ]; then
+			if [ -e $interface/wireless ]; then
+				echo ${interface##*/}
+			fi
+		fi
+	done
+}
+
+LPT_getIFIP(){
+	ip -4 addr show dev "$1" | grep "^\s*inet" | head -n 1 | tr -s " " | cut -d " " -f 3 | cut -d "/" -f 1
+}
+
 time=$LPT_DURATION
-ip=$LPT_IP
 cpu_c=$(nproc --all)
 
 vendor_path=/sys/class/dmi/id/board_vendor
@@ -113,6 +169,7 @@ board_path=/sys/class/dmi/id/board_name
 if [ -e "$board_path" ]; then
 	echo "BOARD NAME:	$(cat $board_path)"
 fi
+if false; then
 cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:ST		$cpu_st"
 cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
@@ -147,7 +204,31 @@ if [ $sd_blks_count -gt 0 ]; then
 	usb_mt=$(LPT_mdd $sd_blks)
 	echo "USB:MT($sd_blks_count)	$usb_mt"
 fi
-net_hd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} | tail -n 1 | tr -s " " | cut -d " " -f 6)
-echo "NET:HD		$net_hd"
-net_fd=$(iperf -c ${ip} -f M -P 2 --sum-only -t ${time} -d | tail -n 1 | tr -s " " | cut -d " " -f 6)
-echo "NET:FD		$net_fd"
+fi
+if [ ! -z "$LPT_IP_ETH" ]; then
+	LPT_testIPerf ETH $LPT_IP_ETH $(LPT_getIFEth)
+fi
+
+#HACK currently it assumes ETH and WIFI are on same subnet
+#TODO add subnet detection and overlap detection
+if [ ! -z "$LPT_IP_WIFI" ]; then
+	if [ "$LPT_IP_ETH" = "$LPT_IP_WIFI" ]; then
+		eth=$(LPT_getIFEth)
+		eth_down=()
+		for i in $eth; do
+			eth_ip=$(LPT_getIFIP "$eth")
+			if [ ! -z "$eth_ip" ]; then
+				ip link set dev $eth down
+				eth_down+=($eth)
+			fi
+		done
+	fi
+	LPT_testIPerf WIFI $LPT_IP_WIFI $(LPT_getIFWiFi)
+	if [ "$LPT_IP_ETH" = "$LPT_IP_WIFI" ]; then
+		if [ ! -z "$eth_ip" ]; then
+			for eth in ${eth_down[@]}; do
+				ip link set dev $eth up
+			done
+		fi
+	fi
+fi
