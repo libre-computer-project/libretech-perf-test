@@ -169,7 +169,6 @@ board_path=/sys/class/dmi/id/board_name
 if [ -e "$board_path" ]; then
 	echo "BOARD NAME:	$(cat $board_path)"
 fi
-if false; then
 cpu_st=$(stress-ng --matrix 1 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
 echo "CPU:ST		$cpu_st"
 cpu_mt=$(stress-ng --matrix 0 -t ${time} --metrics-brief 2>&1 | grep matrix | grep -v instances | tail -n 1 | tr -s " " | cut -d " " -f 9)
@@ -203,7 +202,6 @@ if [ $sd_blks_count -gt 0 ]; then
 	echo "USB:ST		$usb_st"
 	usb_mt=$(LPT_mdd $sd_blks)
 	echo "USB:MT($sd_blks_count)	$usb_mt"
-fi
 fi
 if [ ! -z "$LPT_IP_ETH" ]; then
 	LPT_testIPerf ETH $LPT_IP_ETH $(LPT_getIFEth)
