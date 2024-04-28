@@ -196,7 +196,7 @@ if [ -b "/dev/mmcblk1" ]; then
 	echo "$(LPT_getMMCType mmc1):		$mmc1"
 fi
 sd_blks=$(lsblk -nld | grep ^sd | cut -d " " -f 1)
-sd_blks_count=$(echo -n "$sd_blks" | wc -l)
+sd_blks_count=$(echo -n "$sd_blks" | sed -n '$=')
 if [ $sd_blks_count -gt 0 ]; then
 	usb_st=$(LPT_dd $(echo "$sd_blks" | head -n 1))
 	echo "USB:ST		$usb_st"
